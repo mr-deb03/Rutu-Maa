@@ -1,0 +1,16 @@
+{
+  "name": "Rutu-Maa · Period & Hygiene Companion",
+  "short_name": "Rutu-Maa",
+  "description": "A gentle period & menstrual hygiene companion with cycle tracking, AI dietary plans, pad-change reminders and a dedicated PCOD corner.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff5f8",
+  "theme_color": "#ff7eb3",
+  "categories": ["health", "lifestyle", "medical"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
