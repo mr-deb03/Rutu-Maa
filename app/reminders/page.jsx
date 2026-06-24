@@ -14,7 +14,7 @@ function Toggle({ on, onClick, title, body }) {
 }
 
 export default function RemindersPage() {
-  const { user, ready, config, setReminders, markPadChanged, enableNotifications, subscribePush, testPush, toast } = useAuth();
+  const { user, ready, config, setReminders, markPadChanged, enableNotifications, subscribePush, testPush, notifyNow, pushStatus, toast } = useAuth();
   const [now, setNow] = useState(Date.now());
   const [perm, setPerm] = useState('default');
 
@@ -45,7 +45,19 @@ export default function RemindersPage() {
   async function setPad(h) { await setReminders({ padIntervalHrs: h, padManual: true }); toast('Pad reminder set to every ' + h + ' hours.', 'ok'); }
   async function changed() { await markPadChanged(); toast('Nice & fresh 🌸 timer reset.', 'ok'); }
   async function enable() { const p = await enableNotifications(); setPerm('Notification' in window ? Notification.permission : 'unsupported'); if (p === 'granted') toast('Notifications enabled 🔔', 'ok'); else if (p === 'denied') toast('Notifications are blocked in your browser settings.', 'warn'); }
-  async function test() { const p = await enableNotifications(); if (p !== 'granted') return toast('Please enable notifications first.', 'warn'); if (config.pushEnabled) await testPush(); toast('Test sent — check your notifications.', 'ok'); }
+  async function test() {
+    if (!('Notification' in window)) return toast('This browser does not support notifications.', 'warn');
+    let p = Notification.permission;
+    if (p !== 'granted') p = await enableNotifications();
+    setPerm('Notification' in window ? Notification.permission : 'unsupported');
+    if (p === 'denied') return toast('Blocked. Click the 🔒 in the address bar → Site settings → allow Notifications, then retry.', 'warn');
+    if (p !== 'granted') return toast('Please tap “Allow” when the browser asks.', 'warn');
+    await subscribePush();                                  // make sure a push subscription exists
+    const shown = await notifyNow('Rutu-Maa 🌸', 'Test notification — your reminders are working!');
+    if (config.pushEnabled) await testPush();               // also exercise the real background path
+    if (shown) toast('Sent 🔔 Look at the top-right of your screen / Windows notification center.', 'ok');
+    else toast('Permission is on but Windows didn’t show it — check Settings → Notifications & Focus assist.', 'warn');
+  }
 
   return (
     <>

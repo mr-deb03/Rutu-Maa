@@ -72,6 +72,34 @@ export default function AppProviders({ children }) {
     return perm;
   }
 
+  // Fire a notification right now through the service worker — works even if
+  // server push fails, as long as permission is granted and the OS allows it.
+  async function notifyNow(title, body, route = 'reminders') {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, { body, icon: '/icon.svg', badge: '/icon.svg', tag: 'rutumaa-test', renotify: true, vibrate: [120, 60, 120], data: { route } });
+        return true;
+      }
+      new Notification(title, { body, icon: '/icon.svg' });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // Report what's actually set up, for clear diagnostics.
+  async function pushStatus() {
+    const out = { permission: ('Notification' in window) ? Notification.permission : 'unsupported', sw: false, subscribed: false, serverPush: !!config.pushEnabled };
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        out.sw = !!reg;
+        if (reg && reg.pushManager) out.subscribed = !!(await reg.pushManager.getSubscription());
+      }
+    } catch (e) {}
+    return out;
+  }
+
   const actions = {
     register: async (p) => { const j = await api('POST', '/api/auth/register', p); setUser(j.user); return j.user; },
     login: async (e, pw) => { const j = await api('POST', '/api/auth/login', { email: e, password: pw }); setUser(j.user); return j.user; },
@@ -83,8 +111,8 @@ export default function AppProviders({ children }) {
     markPadChanged: async () => { const j = await api('POST', '/api/pad'); setUser((u) => (u ? { ...u, reminders: j.reminders } : u)); return j.reminders; },
     generateDiet: async () => { const j = await api('POST', '/api/diet'); if (j.ok && j.user) setUser(j.user); return j; },
     saveDiet: async (plan) => { const j = await api('POST', '/api/diet/save', { plan }); if (j.user) setUser(j.user); return j; },
-    testPush: async () => { try { await api('POST', '/api/push/test'); } catch (e) {} },
-    subscribePush, enableNotifications
+    testPush: async () => { try { return await api('POST', '/api/push/test'); } catch (e) { return { ok: false, error: e.message }; } },
+    subscribePush, enableNotifications, notifyNow, pushStatus
   };
 
   const value = { user, config, ready, toast, ...actions };
