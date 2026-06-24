@@ -62,16 +62,18 @@ vercel --prod     # production
 reminders (pad-change, upcoming period, PCOD nudges):
 
 ```json
-{ "crons": [ { "path": "/api/cron/reminders", "schedule": "* * * * *" } ] }
+{ "crons": [ { "path": "/api/cron/reminders", "schedule": "0 9 * * *" } ] }
 ```
 
-- On **Vercel Pro/Enterprise**, this runs every minute.
-- On the **Hobby (free) plan, cron runs at most once per day** — fine for the
-  "period is near" alert, but pad-change timing won't be minute-accurate. For
-  minute-level reminders on Hobby, point an external scheduler (e.g.
-  [cron-job.org](https://cron-job.org)) at
-  `https://<your-app>/api/cron/reminders` every minute, sending the header
-  `Authorization: Bearer <CRON_SECRET>`.
+- The **Hobby (free) plan only allows cron at most once per day**, so the schedule
+  above is daily (a backstop). A more frequent expression like `* * * * *` is
+  **rejected on Hobby** ("would run more than once per day").
+- For minute-accurate pad/period reminders on the free plan, point an external
+  scheduler (e.g. [cron-job.org](https://cron-job.org)) at
+  `https://<your-app>/api/cron/reminders` **every minute**, sending the header
+  `Authorization: Bearer <CRON_SECRET>`. This is what actually drives reminders.
+- On **Vercel Pro/Enterprise** you can instead set the `vercel.json` schedule to
+  `* * * * *` and skip the external scheduler.
 - When `CRON_SECRET` is set, Vercel automatically sends that header; the endpoint
   rejects unauthenticated calls.
 
